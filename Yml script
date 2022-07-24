@@ -1,23 +1,31 @@
----
-- hosts: slave1
+- hosts: all
+  remote_user: ec2-user
   become: yes
-  become_user: root
+  vars:
   tasks:
-    - name: Update and upgrade apt packages
-      apt:
-        upgrade: yes
-        update_cache: yes
-                                            
-    - name: install JDK 11
-      apt:
-        name: openjdk-11-jdk
-        state: present
+   - name: update all
+     yum:
+      name: '*'
+      state: present
+   - name: Install java
+     yum:
+      name: java-1.8.0-openjdk
+      state: present
+   - name: Download tomcat
+     get_url:
+      url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.65/bin/apache-tomcat-9.0.65.tar.gz
+      dest: /opt
+      mode: '0777'
+   - name: Unarchive the binaries
+     unarchive:
+      src: /opt/apache-tomcat-9.0.65.tar.gz
+      dest: /opt
+      remote_src: yes
+      mode: '0777'
+   - name: deploy war
+     get_url:
+       url: https://tomcat.apache.org/tomcat-7.0-doc/appdev/sample/sample.war
+       dest: /opt/apache-tomcat-9.0.65/webapps
+   - name: start tomcat
+     shell: nohup /usr/local/apache-tomcat-9.0.65/bin/startup.sh &
 
-    - name: install tomcat
-      apt: name=tomcat state=present
-    - name: start tomcat service
-      service: name=tomcat state=started
-    - name: deploy war
-      get_url: url="https://tomcat.apache.org/tomcat-7.0-doc/appdev/sample/sample.war" dest=/usr/share/tomcat/webapps
-    - name: restart tomcat service
-      service: name=tomcat state=restarted 
